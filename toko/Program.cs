@@ -15,19 +15,19 @@ static bool IsWorkflowElement(Type type, IList<CustomAttributeData> typeAttribut
     var isElement = false;
     foreach (var attribute in typeAttributes)
     {
-        if (attribute.IsSubclassOf(typeof(ObsoleteAttribute).FullName))
+        if (attribute.Matches(typeof(ObsoleteAttribute).FullName))
         {
             isElement = false;
             break;
         }
 
-        if (attribute.IsSubclassOf(typeof(DesignTimeVisibleAttribute).FullName, false))
+        if (attribute.Matches(typeof(DesignTimeVisibleAttribute).FullName, false))
         {
             isElement = false;
             break;
         }
 
-        if (attribute.IsSubclassOf("Bonsai.CombinatorAttribute"))
+        if (attribute.Matches("Bonsai.CombinatorAttribute"))
         {
             isElement = true;
         }
@@ -63,8 +63,9 @@ foreach (var type in assembly.GetTypes())
             continue;
         }
 
-        var typeDescription = typeAttributes.GetDescription();
-        var elementCategory = typeAttributes.GetElementCategory();
+        var typeDeclaration = TypeDefinitionProvider.GetTypeDeclaration(type, importNamespaces);
+        var typeDescription = typeDeclaration.CustomAttributes.GetDescription();
+        var elementCategory = typeDeclaration.CustomAttributes.GetElementCategory();
         Console.WriteLine("---");
         Console.WriteLine($"name: {type.Name}");
         Console.WriteLine($"namespace: {type.Namespace}");
@@ -72,18 +73,17 @@ foreach (var type in assembly.GetTypes())
         Console.WriteLine($"summary: {typeDescription}");
 
         Console.WriteLine($"properties: ");
-        foreach (var property in type.GetProperties())
+        foreach (var property in typeDeclaration.Members.OfType<CodeMemberProperty>())
         {
-            var propertyAttributes = property.GetCustomAttributesData(inherit: true);
+            var propertyAttributes = property.CustomAttributes;
             if (propertyAttributes.IsDefined(typeof(BrowsableAttribute).FullName, false))
             {
                 continue;
             }
 
             var propertyDescription = propertyAttributes.GetDescription();
-            var propertyTypeReference = new CodeTypeReference(property.PropertyType);
             Console.WriteLine($"  - name: {property.Name}");
-            Console.WriteLine($"    type: {codeProvider.GetTypeOutput(propertyTypeReference)}");
+            Console.WriteLine($"    type: {codeProvider.GetTypeOutput(property.Type)}");
             Console.WriteLine($"    description: {propertyDescription}");
         }
 
@@ -98,16 +98,15 @@ foreach (var type in assembly.GetTypes())
         }
 
         var methodName = "Process";
-        var combinatorAttribute = typeAttributes.First(attribute => attribute.IsSubclassOf("Bonsai.CombinatorAttribute"));
-        foreach (var argument in combinatorAttribute.NamedArguments)
+        var combinatorAttribute = typeDeclaration.CustomAttributes.FirstOrDefault("Bonsai.CombinatorAttribute");
+        foreach (CodeAttributeArgument argument in combinatorAttribute.Arguments)
         {
-            if (argument.MemberName == "MethodName" && argument.TypedValue.ArgumentType.FullName == typeof(string).FullName)
+            if (argument.Name == "MethodName" && argument.Value is CodePrimitiveExpression expression)
             {
-                methodName = (string?)argument.TypedValue.Value ?? methodName;
+                methodName = (string?)expression.Value as string ?? methodName;
             }
         }
 
-        var typeDeclaration = TypeDefinitionProvider.GetTypeDeclaration(type, importNamespaces);
         foreach (var method in typeDeclaration.Members.OfType<CodeMemberMethod>())
         {
             if (method.Name != methodName)

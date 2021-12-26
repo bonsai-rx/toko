@@ -153,7 +153,7 @@ static class TypeDefinitionProvider
             AddGenericTypeParameters(declaration.TypeParameters, typeParameters, importNamespaces);
         }
 
-        var attributes = type.GetCustomAttributesData()
+        var attributes = type.GetCustomAttributesData(inherit: true)
             .Select(a => GetAttributeDeclaration(a, importNamespaces))
             .ToArray();
 

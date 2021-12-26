@@ -4,25 +4,15 @@ namespace toko;
 
 internal static class ReflectionExtensions
 {
-    internal static bool IsDefined(this IList<CustomAttributeData> attributes, string typeFullName)
-    {
-        return attributes.Any(attribute => attribute.IsSubclassOf(typeFullName));
-    }
-
-    internal static bool IsDefined(this IList<CustomAttributeData> attributes, string typeFullName, params object[] values)
-    {
-        return attributes.Any(attribute => attribute.IsSubclassOf(typeFullName, values));
-    }
-
-    internal static bool IsSubclassOf(this CustomAttributeData attribute, string typeFullName)
+    internal static bool Matches(this CustomAttributeData attribute, string typeFullName)
     {
         return IsSubclassOf(attribute.AttributeType, typeFullName);
     }
 
-    internal static bool IsSubclassOf(this CustomAttributeData attribute, string typeFullName, params object[] values)
+    internal static bool Matches(this CustomAttributeData attribute, string typeFullName, params object[] values)
     {
         var arguments = attribute.ConstructorArguments;
-        if (attribute.IsSubclassOf(typeFullName) && arguments.Count == values.Length)
+        if (attribute.Matches(typeFullName) && arguments.Count == values.Length)
         {
             for (int i = 0; i < values.Length; i++)
             {
@@ -78,40 +68,4 @@ internal static class ReflectionExtensions
 
         return attributes;
     }
-
-    internal static string GetDescription(this IList<CustomAttributeData> attributes)
-    {
-        var descriptionAttribute = attributes.FirstOrDefault(attribute => attribute.IsSubclassOf(typeof(DescriptionAttribute).FullName));
-        if (descriptionAttribute != null && descriptionAttribute.ConstructorArguments.Count == 1)
-        {
-            var description = descriptionAttribute.ConstructorArguments[0].Value as string;
-            return description ?? string.Empty;
-        }
-
-        return string.Empty;
-    }
-
-    internal static ElementCategory GetElementCategory(this IList<CustomAttributeData> attributes)
-    {
-        var elementCategoryAttribute = attributes.FirstOrDefault(attribute => attribute.IsSubclassOf("Bonsai.WorkflowElementCategoryAttribute"));
-        if (elementCategoryAttribute != null && elementCategoryAttribute.ConstructorArguments.Count == 1)
-        {
-            var elementCategory = (ElementCategory)elementCategoryAttribute.ConstructorArguments[0].Value;
-            return elementCategory;
-        }
-
-        return ElementCategory.Combinator;
-    }
-}
-
-public enum ElementCategory
-{
-    Source,
-    Condition,
-    Transform,
-    Sink,
-    Nested,
-    Property,
-    Combinator,
-    Workflow
 }
