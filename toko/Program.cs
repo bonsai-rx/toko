@@ -69,6 +69,7 @@ foreach (var type in assembly.GetTypes())
         Console.WriteLine("---");
         Console.WriteLine($"name: {type.Name}");
         Console.WriteLine($"namespace: {type.Namespace}");
+        Console.WriteLine($"assembly: {type.Assembly.GetName().Name}");
         Console.WriteLine($"category: {elementCategory}");
         Console.WriteLine($"summary: {typeDescription}");
 
